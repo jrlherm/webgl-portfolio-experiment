@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import fragment from "./shaders/fragment.glsl";
 import vertex from "./shaders/vertex.glsl";
-
-import testTexture from "./water.jpg";
+import testTexture from "./texture.jpg";
+import * as dat from "dat.gui";
 
 // Define the Sketch class
 export default class Sketch {
@@ -15,13 +15,15 @@ export default class Sketch {
 
     // Create a perspective camera
     this.camera = new THREE.PerspectiveCamera(
-      70, // Field of view in degrees
+      80, // Field of view in degrees
       this.width / this.height, // Aspect ratio
-      0.01, // Near clipping plane
-      10 // Far clipping plane
+      10, // Near clipping plane
+      1000 // Far clipping plane
     );
-    this.camera.position.z = 1; // Camera position in depth
+    this.camera.position.z = 600; // Camera position in depth
 
+    this.camera.fov =
+      (2 * Math.atan(this.height / 2 / this.camera.position.z) * 180) / Math.PI;
     // Create a Three.js scene
     this.scene = new THREE.Scene();
 
@@ -40,9 +42,20 @@ export default class Sketch {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     this.time = 0; // Time for animation
+    this.setupSettings();
+    this.resize();
     this.addObjects(); // Add objects to the scene
     this.render(); // Start rendering
+
     this.setupResize(); // Set up window resize handling
+  }
+
+  setupSettings() {
+    this.settings = {
+      progress: 0,
+    };
+    this.gui = new dat.GUI();
+    this.gui.add(this.settings, "progress", 0, 1, 0.001);
   }
 
   // Function to handle window resizing
@@ -62,13 +75,13 @@ export default class Sketch {
   // Function to add objects to the scene
   addObjects() {
     // this.geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2); // Cube geometry
-    // this.geometry = new THREE.PlaneGeometry(0.8, 0.8, 500, 500); Plane geometry
-    this.geometry = new THREE.SphereGeometry(0.5, 60, 60); // Sphere geometry
+    this.geometry = new THREE.PlaneGeometry(300, 300, 100, 100); //Plane geometry
 
     this.material = new THREE.ShaderMaterial({
       // wireframe: true,
       uniforms: {
         time: { value: 1.0 },
+        uProgress: { value: 1.0 },
         uTexture: { value: new THREE.TextureLoader().load(testTexture) },
         resolution: {
           value: new THREE.Vector2(),
@@ -79,6 +92,7 @@ export default class Sketch {
     });
 
     this.mesh = new THREE.Mesh(this.geometry, this.material); // Create mesh with geometry and material
+    this.mesh.position.x = 300;
     this.scene.add(this.mesh); // Add the mesh to the scene
   }
 
@@ -86,6 +100,8 @@ export default class Sketch {
   render() {
     this.time += 0.05; // Update time for animation
     this.material.uniforms.time.value = this.time;
+    this.material.uniforms.uProgress.value = this.settings.progress;
+
     this.mesh.rotation.x = this.time / 2000; // Rotate on the x-axis
     this.mesh.rotation.y = this.time / 1000; // Rotate on the y-axis
 
